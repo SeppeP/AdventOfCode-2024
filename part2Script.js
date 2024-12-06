@@ -1,18 +1,21 @@
-import input from './input.js'
+import input from './input.js';
 
 const rows = input.split('\n');
+let rowsCopy = [...rows];
 
-const currentPosition = {
+const startingPosition = {
   x: rows.find(row => row.includes('^')).split('').findIndex(char => char === '^'),
   y: rows.findIndex(row => row.includes('^')),
 };
+
+const currentPosition = Object.assign({}, startingPosition);
 
 let direction = 'up';
 
 let isAtEdge = false;
 
 function getCharByCoord(x, y) {
-  return rows[y] && rows[y][x];
+  return rowsCopy[y] && rowsCopy[y][x];
 }
 
 function changeDirection() {
@@ -62,27 +65,27 @@ function takeStep() {
       case 'X':
         switch (direction) {
           case 'up':
-            const newUpRow = rows[currentPosition.y - 1].split('');
+            const newUpRow = rowsCopy[currentPosition.y - 1].split('');
             newUpRow[currentPosition.x] = 'X';
-            rows[currentPosition.y - 1] = newUpRow.join('');
+            rowsCopy[currentPosition.y - 1] = newUpRow.join('');
             currentPosition.y--;
             break;
           case 'right':
-            const newRightRow = rows[currentPosition.y].split('');
+            const newRightRow = rowsCopy[currentPosition.y].split('');
             newRightRow[currentPosition.x + 1] = 'X';
-            rows[currentPosition.y] = newRightRow.join('');
+            rowsCopy[currentPosition.y] = newRightRow.join('');
             currentPosition.x++;
             break;
           case 'down':
-            const newDownRow = rows[currentPosition.y + 1].split('');
+            const newDownRow = rowsCopy[currentPosition.y + 1].split('');
             newDownRow[currentPosition.x] = 'X';
-            rows[currentPosition.y + 1] = newDownRow.join('');
+            rowsCopy[currentPosition.y + 1] = newDownRow.join('');
             currentPosition.y++;
             break;
           case 'left':
-            const newLeftRow = rows[currentPosition.y].split('');
+            const newLeftRow = rowsCopy[currentPosition.y].split('');
             newLeftRow[currentPosition.x - 1] = 'X';
-            rows[currentPosition.y] = newLeftRow.join('');
+            rowsCopy[currentPosition.y] = newLeftRow.join('');
             currentPosition.x--;
             break;
         }
@@ -90,13 +93,41 @@ function takeStep() {
   }
 }
 
+let loopCounts = 0;
 
-while (!isAtEdge) {
-  takeStep();
+for (let y = 0; y < rowsCopy.length; y++) {
+  for (let x = 0; x < rowsCopy[0].length; x++) {
+    isAtEdge = false;
+    const newRow = rowsCopy[y].split('');
+    newRow[x] = '#';
+    rowsCopy[y] = newRow.join('');
+
+    const history = [];
+    let foundALoop = false;
+
+    while (!isAtEdge && !foundALoop) {
+      takeStep();
+
+      const match = history.find(h => h.xPos === currentPosition.x && h.yPos === currentPosition.y && h.direction === direction);
+      if (match && !isAtEdge) {
+        loopCounts++;
+        foundALoop = true;
+      } else {
+        history.push({
+          xPos: currentPosition.x,
+          yPos: currentPosition.y,
+          direction,
+        });
+      }
+    }
+
+    rowsCopy = [...rows];
+    direction = 'up';
+    currentPosition.x = startingPosition.x;
+    currentPosition.y = startingPosition.y;
+    isAtEdge = false;
+    foundALoop = false;
+  }
 }
 
-const counts = rows.map(r => {
-  return r.replaceAll('.', '').replaceAll('#', '').length
-})
-
-console.log(counts.reduce((a, b) => a + b));
+console.log(loopCounts);
